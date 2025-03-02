@@ -1,0 +1,24 @@
+[33m9d4341d0[m[33m ([m[1;36mHEAD -> [m[1;32mfeature/google-oauth[m[33m)[m try
+[33mba044b91[m can login
+[33me6dcb00f[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m testing done
+[33m994fa410[m Remove .env file from tracking
+[33m3623681a[m more git ignore
+[33m0459faa1[m gitignore
+[33mb9a54053[m git ignore
+[33mf1d1c3d9[m Merge pull request #2 from JogNov29/feature/added-likes
+[33m4b0c3634[m untested
+[33m46c2a280[m Merge pull request #1 from JogNov29/feature/enhance-api-design-patterns
+[33m89c589aa[m[33m ([m[1;31morigin/feature/enhance-api-design-patterns[m[33m)[m tested - logging and factory
+[33me67345e0[m[33m ([m[1;31morigin/feature/enhanced-api-authentication[m[33m)[m tested and working
+[33m9d1f6fa1[m beter auth and security posts/views.py and serializers.py
+[33me358a3cb[m week 4
+[33m7a3aa38c[m not yet tested
+[33mf187801d[m[33m ([m[1;31morigin/feature/api-validation[m[33m)[m Add requirements.txt
+[33m0d2f7ff8[m new version - working
+[33m73deee69[m Ignore env directory
+[33mfa6944e6[m added script for setting up env
+[33m78cc20a1[m Activity 5 done and tested
+[33m7ac47546[m get_posts and create_posts fixed
+[33m6f727d7b[m og version restored
+[33mb0ffa34f[m Initial commit
+[33m104470e5[m Initial commit after re-initialising

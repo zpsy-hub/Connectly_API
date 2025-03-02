@@ -17,10 +17,13 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from posts.views import UserLoginView as UserLogin
+from django.views.generic import TemplateView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api-auth/', include('rest_framework.urls')),  # DRF login/logout
     path('posts/', include('posts.urls')),
+    path('api/', include('posts.urls')),  # Your existing API endpoints
+    path('accounts/', include('allauth.urls')),  # Add this for OAuth
     path('login/', UserLogin.as_view(), name='user-login'),
 ]

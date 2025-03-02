@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connectly - Home</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f8f9fa;
+        }
+        
+        .navbar {
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #4a76a8;
+            text-decoration: none;
+        }
+        
+        .navbar-menu {
+            display: flex;
+            gap: 1.5rem;
+        }
+        
+        .navbar-menu a {
+            color: #555;
+            text-decoration: none;
+        }
+        
+        .navbar-menu a:hover {
+            color: #4a76a8;
+        }
+        
+        .user-menu {
+            position: relative;
+        }
+        
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+        
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: #4a76a8;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .dropdown-menu {
+            position: absolute;
+            right: 0;
+            top: 100%;
+            background-color: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+            padding: 0.5rem 0;
+            min-width: 150px;
+            display: none;
+        }
+        
+        .dropdown-menu.show {
+            display: block;
+        }
+        
+        .dropdown-item {
+            padding: 0.5rem 1rem;
+            color: #333;
+            text-decoration: none;
+            display: block;
+        }
+        
+        .dropdown-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .dropdown-divider {
+            height: 1px;
+            background-color: #ddd;
+            margin: 0.5rem 0;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .welcome-card {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+        
+        .welcome-text h1 {
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+        
+        .welcome-text p {
+            color: #666;
+            line-height: 1.5;
+        }
+        
+        .welcome-image {
+            flex-shrink: 0;
+        }
+        
+        .welcome-image img {
+            width: 200px;
+            height: auto;
+        }
+        
+        .post-form {
+            margin-bottom: 1rem;
+        }
+        
+        .post-input {
+            width: 100%;
+            padding: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            resize: none;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .post-input:focus {
+            outline: none;
+            border-color: #4a76a8;
+        }
+        
+        .post-actions {
+            display: flex;
+            justify-content: flex-end;
+        }
+        
+        .btn {
+            padding: 0.5rem 1rem;
+            background-color: #4a76a8;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        
+        .btn:hover {
+            background-color: #3a5a78;
+        }
+        
+        .post {
+            border-bottom: 1px solid #eee;
+            padding: 1.5rem 0;
+        }
+        
+        .post:last-child {
+            border-bottom: none;
+        }
+        
+        .post-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .post-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #4a76a8;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 0.75rem;
+        }
+        
+        .post-user {
+            font-weight: bold;
+            margin-bottom: 0.25rem;
+        }
+        
+        .post-time {
+            font-size: 0.8rem;
+            color: #777;
+        }
+        
+        .post-content {
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+        
+        .post-actions-bar {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .post-action {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #777;
+            cursor: pointer;
+        }
+        
+        .post-action:hover {
+            color: #4a76a8;
+        }
+        
+        .post-action svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .welcome-card {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .welcome-image img {
+                width: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="#" class="navbar-brand">Connectly</a>
+        
+        <div class="navbar-menu">
+            <a href="#">Home</a>
+            <a href="#">Explore</a>
+            <a href="#">Messages</a>
+            <a href="#">Notifications</a>
+            
+            <div class="user-menu">
+                <div class="user-profile" id="userMenuToggle">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <span id="userName">User</span>
+                </div>
+                
+                <div class="dropdown-menu" id="userDropdown">
+                    <a href="#" class="dropdown-item">Profile</a>
+                    <a href="#" class="dropdown-item">Settings</a>
+                    <div class="dropdown-divider"></div>
+                    <a href="#" class="dropdown-item" id="logoutBtn">Logout</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div class="card welcome-card">
+            <div class="welcome-text">
+                <h1>Welcome to Connectly</h1>
+                <p>Share updates, connect with friends, and discover what's happening in your network.</p>
+            </div>
+            <div class="welcome-image">
+                <img src="https://cdn-icons-png.flaticon.com/512/2936/2936774.png" alt="Connect Illustration">
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="post-form">
+                <textarea class="post-input" placeholder="What's on your mind?" rows="3"></textarea>
+                <div class="post-actions">
+                    <button class="btn" id="createPostBtn">Post</button>
+                </div>
+            </div>
+            
+            <div id="postsContainer">
+                <!-- Posts will be loaded here -->
+                <div class="post">
+                    <div class="post-header">
+                        <div class="post-avatar">J</div>
+                        <div>
+                            <div class="post-user">John Doe</div>
+                            <div class="post-time">2 hours ago</div>
+                        </div>
+                    </div>
+                    <div class="post-content">
+                        Just joined Connectly! Looking forward to connecting with everyone here.
+                    </div>
+                    <div class="post-actions-bar">
+                        <div class="post-action">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                            </svg>
+                            <span>Like</span>
+                        </div>
+                        <div class="post-action">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                            </svg>
+                            <span>Comment</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Toggle user dropdown menu
+        document.getElementById('userMenuToggle').addEventListener('click', function() {
+            document.getElementById('userDropdown').classList.toggle('show');
+        });
+        
+        // Close dropdown when clicking outside
+        window.addEventListener('click', function(event) {
+            if (!event.target.closest('.user-menu')) {
+                document.getElementById('userDropdown').classList.remove('show');
+            }
+        });
+        
+        // Logout functionality
+        document.getElementById('logoutBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Call logout API
+            fetch('/api/logout/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    refresh_token: localStorage.getItem('refresh_token')
+                })
+            })
+            .then(() => {
+                // Clear local storage
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('refresh_token');
+                localStorage.removeItem('user');
+                
+                // Redirect to login page
+                window.location.href = '/login.html';
+            })
+            .catch(error => {
+                console.error('Logout error:', error);
+                // Redirect anyway
+                window.location.href = '/login.html';
+            });
+        });
+        
+        // Load user info
+        function loadUserInfo() {
+            const userStr = localStorage.getItem('user');
+            if (!userStr) {
+                // Not logged in, redirect to login
+                window.location.href = '/login.html';
+                return;
+            }
+            
+            const user = JSON.parse(userStr);
+            
+            // Update UI with user info
+            document.getElementById('userName').textContent = user.username;
+            
+            // Set avatar initials
+            if (user.username) {
+                document.getElementById('userAvatar').textContent = user.username.charAt(0).toUpperCase();
+            }
+        }
+        
+        // Create post functionality
+        document.getElementById('createPostBtn').addEventListener('click', function() {
+            const content = document.querySelector('.post-input').value.trim();
+            
+            if (!content) {
+                return;
+            }
+            
+            // Get access token
+            const token = localStorage.getItem('access_token');
+            
+            // Call create post API
+            fetch('/api/posts/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    title: content.substr(0, 30),
+                    content: content,
+                    post_type: 'text'
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to create post');
+                }
+                return response.json();
+            })
+            .then(() => {
+                // Clear input
+                document.querySelector('.post-input').value = '';
+                
+                // Reload posts
+                loadPosts();
+            })
+            .catch(error => {
+                console.error('Error creating post:', error);
+                alert('Error creating post. Please try again.');
+            });
+        });
+        
+        // Load posts
+        function loadPosts() {
+            const token = localStorage.getItem('access_token');
+            
+            fetch('/api/posts/', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to load posts');
+                }
+                return response.json();
+            })
+            .then(posts => {
+                renderPosts(posts);
+            })
+            .catch(error => {
+                console.error('Error loading posts:', error);
+            });
+        }
+        
+        // Render posts
+function renderPosts(posts) {
+    const container = document.getElementById('postsContainer');
+    
+    // Clear existing posts
+    container.innerHTML = '';
+    
+    if (posts.length === 0) {
+        container.innerHTML = '<div class="post"><p style="text-align: center; color: #777;">No posts yet. Be the first to share something!</p></div>';
+        return;
+    }
+    
+    // Add each post
+    posts.forEach(post => {
+        const postElement = document.createElement('div');
+        postElement.className = 'post';
+        
+        const date = new Date(post.created_at);
+        const timeAgo = getTimeAgo(date);
+        
+        postElement.innerHTML = `
+            <div class="post-header">
+                <div class="post-avatar">${post.author ? post.author.charAt(0).toUpperCase() : 'U'}</div>
+                <div>
+                    <div class="post-user">${post.author || 'Unknown User'}</div>
+                    <div class="post-time">${timeAgo}</div>
+                </div>
+            </div>
+            <div class="post-content">
+                ${post.content}
+            </div>
+            <div class="post-actions-bar">
+                <div class="post-action" data-post-id="${post.id}" onclick="likePost(${post.id})">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="${post.is_liked_by_user ? 'currentColor' : 'none'}" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                    </svg>
+                    <span>${post.likes_count || 0} ${post.likes_count === 1 ? 'Like' : 'Likes'}</span>
+                </div>
+                <div class="post-action">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                    <span>${post.comments_count || 0} ${post.comments_count === 1 ? 'Comment' : 'Comments'}</span>
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(postElement);
+    });
+}
+
+// Helper function to format time ago
+function getTimeAgo(date) {
+    const now = new Date();
+    const diffInSeconds = Math.floor((now - date) / 1000);
+    
+    if (diffInSeconds < 60) {
+        return 'Just now';
+    }
+    
+    const diffInMinutes = Math.floor(diffInSeconds / 60);
+    if (diffInMinutes < 60) {
+        return `${diffInMinutes} ${diffInMinutes === 1 ? 'minute' : 'minutes'} ago`;
+    }
+    
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) {
+        return `${diffInHours} ${diffInHours === 1 ? 'hour' : 'hours'} ago`;
+    }
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 30) {
+        return `${diffInDays} ${diffInDays === 1 ? 'day' : 'days'} ago`;
+    }
+    
+    const diffInMonths = Math.floor(diffInDays / 30);
+    if (diffInMonths < 12) {
+        return `${diffInMonths} ${diffInMonths === 1 ? 'month' : 'months'} ago`;
+    }
+    
+    const diffInYears = Math.floor(diffInMonths / 12);
+    return `${diffInYears} ${diffInYears === 1 ? 'year' : 'years'} ago`;
+}
+
+// Function to like/unlike a post
+function likePost(postId) {
+    const token = localStorage.getItem('access_token');
+    
+    fetch(`/api/posts/${postId}/like/`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to like post');
+        }
+        return response.json();
+    })
+    .then(data => {
+        // Reload posts to update like status
+        loadPosts();
+    })
+    .catch(error => {
+        console.error('Error liking post:', error);
+    });
+}
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    loadUserInfo();
+    loadPosts();
+});

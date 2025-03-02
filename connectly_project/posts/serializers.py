@@ -1,9 +1,44 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Post, Comment, Like
+from .models import Post, Comment, Like, Profile
 
+class ProfileSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username', read_only=True)
+    email = serializers.EmailField(source='user.email', read_only=True)
+    followers_count = serializers.IntegerField(read_only=True)
+    following_count = serializers.IntegerField(read_only=True)
+    posts_count = serializers.IntegerField(read_only=True)
+    is_following = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Profile
+        fields = [
+            'id', 'username', 'email', 'profile_picture', 'bio',
+            'location', 'website', 'birth_date', 'followers_count',
+            'following_count', 'posts_count', 'is_following',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['created_at', 'updated_at']
 
+    def get_is_following(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return obj.followers.filter(id=request.user.id).exists()
+        return False
+
+    def validate_profile_picture(self, value):
+        """Validate profile picture size and format"""
+        if value:
+            if value.size > 5 * 1024 * 1024:  # 5MB limit
+                raise serializers.ValidationError("Profile picture size cannot exceed 5MB")
+            
+            allowed_formats = ['image/jpeg', 'image/png', 'image/gif']
+            if value.content_type not in allowed_formats:
+                raise serializers.ValidationError("Only JPEG, PNG and GIF images are allowed")
+        return value
+    
 class UserSerializer(serializers.ModelSerializer):
+    profile = ProfileSerializer(read_only=True)
     """
     Secure User Serializer
     - Excludes sensitive information like password from the response
@@ -20,10 +55,9 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'password']  # Include password for creation but not for response
+        fields = ['id', 'username', 'email', 'profile', 'password']
         extra_kwargs = {
-            'username': {'validators': []},  # Remove default validators
-            'email': {'required': True}
+            'password': {'write_only': True}
         }
 
     def validate_username(self, value):
@@ -78,7 +112,10 @@ class UserSerializer(serializers.ModelSerializer):
         return instance
 
 
+
 class PostSerializer(serializers.ModelSerializer):
+    profile = ProfileSerializer(read_only=True)
+    author_profile = ProfileSerializer(source='author.profile', read_only=True)
     """
     Complete Post Serializer
     - Handles post creation, updating, and retrieval
@@ -107,6 +144,7 @@ class PostSerializer(serializers.ModelSerializer):
             'post_type',
             'metadata',
             'author',
+            'author_profile',
             'created_at',
             'likes_count',
             'is_liked_by_user',
@@ -253,6 +291,7 @@ class PostSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
+    author_profile = ProfileSerializer(source='author.profile', read_only=True)
     """
     Secure Comment Serializer
     - Validates comment creation
@@ -261,7 +300,7 @@ class CommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comment
-        fields = ['id', 'text', 'author', 'post', 'created_at']
+        fields = ['id', 'text', 'author', 'author_profile', 'post', 'created_at']
         read_only_fields = ['author', 'created_at']
 
     def validate_text(self, value):
@@ -315,3 +354,4 @@ class LikeSerializer(serializers.ModelSerializer):
         model = Like
         fields = ['id', 'user', 'post', 'created_at']
         read_only_fields = ['user', 'created_at']
+
