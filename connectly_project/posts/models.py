@@ -34,13 +34,22 @@ class Post(models.Model):
         ('text', 'Text'),
     )
     
-    # Fields
-    title = models.CharField(max_length=255)  # Add title field to store the title of the post
-    content = models.TextField()  # Post content
-    post_type = models.CharField(max_length=50, choices=POST_TYPES)  # Post type (image, video, etc.)
-    metadata = models.JSONField(null=True, blank=True)  # Store metadata in a JSON format (file_size, duration, etc.)
-    created_at = models.DateTimeField(auto_now_add=True)  # Auto-filled with timestamp
-    author = models.ForeignKey(User, on_delete=models.CASCADE)  # Author of the post (foreign key to User)
+    PRIVACY_CHOICES = (
+        ('public', 'Public'),
+        ('followers', 'Followers Only'),
+        ('private', 'Private'),
+    )
+    
+    # Existing fields
+    title = models.CharField(max_length=255)
+    content = models.TextField()
+    post_type = models.CharField(max_length=50, choices=POST_TYPES)
+    metadata = models.JSONField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    
+    # New field for privacy settings
+    privacy = models.CharField(max_length=20, choices=PRIVACY_CHOICES, default='public')
 
     def __str__(self):
         return self.title
@@ -135,6 +144,13 @@ class Like(models.Model):
             raise ValidationError("Users cannot like their own posts")
 
 class Profile(models.Model):
+    ROLES = (
+        ('admin', 'Administrator'),
+        ('moderator', 'Moderator'),
+        ('user', 'Regular User'),
+    )
+    
+    
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     profile_picture = CloudinaryField('image', null=True, blank=True)
     bio = models.TextField(max_length=500, blank=True)
@@ -149,6 +165,9 @@ class Profile(models.Model):
     posts_count = models.PositiveIntegerField(default=0)
     followers_count = models.PositiveIntegerField(default=0)
     following_count = models.PositiveIntegerField(default=0)
+    
+    # field for user role
+    role = models.CharField(max_length=20, choices=ROLES, default='user')
     
     def __str__(self):
         return f"{self.user.username}'s profile"
@@ -188,3 +207,6 @@ class Profile(models.Model):
             feed_type=feed_type,
             time_filter=time_filter
         )
+        
+    def is_admin_or_moderator(self):
+        return self.role in ['admin', 'moderator'] or self.user.is_staff
