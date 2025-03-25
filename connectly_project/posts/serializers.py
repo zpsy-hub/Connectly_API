@@ -9,6 +9,7 @@ class ProfileSerializer(serializers.ModelSerializer):
     following_count = serializers.IntegerField(read_only=True)
     posts_count = serializers.IntegerField(read_only=True)
     is_following = serializers.SerializerMethodField()
+    role = serializers.CharField(read_only=True)
     
     class Meta:
         model = Profile
@@ -16,9 +17,9 @@ class ProfileSerializer(serializers.ModelSerializer):
             'id', 'username', 'email', 'profile_picture', 'bio',
             'location', 'website', 'birth_date', 'followers_count',
             'following_count', 'posts_count', 'is_following',
-            'created_at', 'updated_at'
+            'created_at', 'updated_at', 'role'  # Include role in fields
         ]
-        read_only_fields = ['created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at', 'role']  # Make role read-only
 
     def get_is_following(self, obj):
         request = self.context.get('request')
@@ -129,6 +130,9 @@ class PostSerializer(serializers.ModelSerializer):
         slug_field='username',
         read_only=True
     )
+
+    # Add privacy field
+    privacy = serializers.CharField(required=False, default='public')
     
     # Likes-related fields
     likes_count = serializers.SerializerMethodField()
@@ -148,7 +152,8 @@ class PostSerializer(serializers.ModelSerializer):
             'created_at',
             'likes_count',
             'is_liked_by_user',
-            'comments_count'
+            'comments_count',
+            'privacy'
         ]
         read_only_fields = [
             'author',
@@ -288,6 +293,15 @@ class PostSerializer(serializers.ModelSerializer):
         ]
         
         return representation
+
+    def validate_privacy(self, value):
+        """Validate privacy setting"""
+        valid_settings = dict(Post.PRIVACY_CHOICES).keys()
+        if value not in valid_settings:
+            raise serializers.ValidationError(
+                f"Invalid privacy setting. Must be one of: {', '.join(valid_settings)}"
+            )
+        return value
 
 
 class CommentSerializer(serializers.ModelSerializer):

@@ -22,6 +22,7 @@ from .views import (
     FollowUserView,
     NewsFeedView,
     TrendingPostsView,
+    UserRoleManagementView,
 )
 
 
@@ -71,4 +72,7 @@ urlpatterns = [
     # Feed endpoints
     path('feed/', NewsFeedView.as_view(), name='news-feed'),
     path('feed/trending/', TrendingPostsView.as_view(), name='trending-posts'),
+    
+    # Add user role management route
+    path('users/<int:user_id>/role/', UserRoleManagementView.as_view(), name='user-role-management'),
 ]

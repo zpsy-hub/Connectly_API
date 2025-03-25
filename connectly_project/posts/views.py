@@ -27,7 +27,7 @@ from datetime import timedelta
 
 # Local imports
 from .models import Post, Comment, Like, Profile
-from .permissions import IsPostAuthor, IsCommentAuthor
+from .permissions import IsPostAuthor, IsCommentAuthor, HasPostVisibilityPermission
 from .serializers import (
     UserSerializer,
     PostSerializer,
@@ -263,24 +263,39 @@ class ProtectedView(APIView):
 
 class PostListCreate(APIView):
     """
-    Post Management Endpoint
-    - Token authentication required
-    - Supports post listing and creation
-    - Security:
-      * Only authenticated users can create posts
-      * Validates post content
-      * Automatically assigns post author
+    Post Management Endpoint with privacy filters
     """
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        # List all posts
-        posts = Post.objects.all()
-        return Response(
-            PostSerializer(posts, many=True).data, 
-            status=status.HTTP_200_OK
-        )
+        # Get current user
+        user = request.user
+        
+        # Base query
+        base_query = Post.objects.all()
+        
+        # If not admin/moderator, apply privacy filters
+        if not (user.is_staff or (hasattr(user, 'profile') and user.profile.role in ['admin', 'moderator'])):
+            # Include user's own posts
+            privacy_filter = Q(author=user)
+            
+            # Include public posts
+            privacy_filter |= Q(privacy='public')
+            
+            # Include followers-only posts from users the current user follows
+            following_ids = []
+            if hasattr(user, 'following'):
+                following_ids = user.following.values_list('id', flat=True)
+            
+            privacy_filter |= Q(privacy='followers', author_id__in=following_ids)
+            
+            # Apply the filter
+            base_query = base_query.filter(privacy_filter)
+        
+        posts = base_query.order_by('-created_at')
+        serializer = PostSerializer(posts, many=True, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
         # Validate post content
@@ -291,7 +306,7 @@ class PostListCreate(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Validate post type (optional) if not done by the factory
+        # Validate post type
         post_type = request.data.get('post_type', '')
         if post_type not in dict(Post.POST_TYPES):
             return Response(
@@ -299,21 +314,26 @@ class PostListCreate(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Prepare metadata and add author_id (instead of the entire user object)
+        # Prepare metadata
         metadata = request.data.get('metadata', {})
-        metadata['author_id'] = request.user.id  # Add the user_id as author_id
+        metadata['author_id'] = request.user.id
 
         try:
-            metadata = request.data.get('metadata', {})
-            metadata['author_id'] = request.user.id
             post = PostFactory.create_post(
                 post_type,
                 request.data['title'],
                 content,
                 metadata
             )
+            
+            # Set privacy if provided
+            privacy = request.data.get('privacy', 'public')
+            if privacy in dict(Post.PRIVACY_CHOICES).keys():
+                post.privacy = privacy
+                post.save()
+                
             return Response(
-                PostSerializer(post).data,
+                PostSerializer(post, context={'request': request}).data,
                 status=status.HTTP_201_CREATED
             )
         except ValueError as e:
@@ -335,25 +355,26 @@ class PostDetailView(APIView):
       * Validates post modifications
     """
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated, IsPostAuthor]
+    permission_classes = [IsAuthenticated, HasPostVisibilityPermission]
 
     def get(self, request, pk):
-        # Retrieve specific post
         try:
             post = Post.objects.get(pk=pk)
             self.check_object_permissions(request, post)
             return Response(
-                {"content": post.content}, 
+                PostSerializer(post, context={'request': request}).data, 
                 status=status.HTTP_200_OK
             )
         except Post.DoesNotExist:
             raise NotFound('Post not found')
 
     def put(self, request, pk):
-        # Update post
         try:
             post = Post.objects.get(pk=pk)
-            self.check_object_permissions(request, post)
+            
+            # Only author can update the post
+            if post.author != request.user:
+                raise PermissionDenied('You do not have permission to edit this post')
 
             content = request.data.get('content', '').strip()
             if not content:
@@ -378,10 +399,16 @@ class PostDetailView(APIView):
             raise NotFound('Post not found')
 
     def delete(self, request, pk):
-        # Delete post
         try:
             post = Post.objects.get(pk=pk)
-            self.check_object_permissions(request, post)
+            
+            # Author or admin/moderator can delete posts
+            if post.author != request.user and not (
+                request.user.is_staff or 
+                (hasattr(request.user, 'profile') and request.user.profile.role in ['admin', 'moderator'])
+            ):
+                raise PermissionDenied('You do not have permission to delete this post')
+
             post.delete()
             return Response(
                 {"message": "Post deleted successfully."}, 
@@ -831,7 +858,7 @@ class ProfileView(APIView):
     Profile management endpoint
     - Get profile details
     - Update profile
-    - Upload profile picture
+    - Handles role information
     """
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
@@ -845,13 +872,41 @@ class ProfileView(APIView):
             raise NotFound('Profile not found')
 
     def put(self, request):
+        # Get the current user's profile
         profile = request.user.profile
-        serializer = ProfileSerializer(profile, data=request.data, partial=True)
+        
+        # Make a copy of request data to modify safely
+        data = request.data.copy()
+        
+        # Remove role from the data if the user is not an admin
+        if 'role' in data and not (request.user.is_staff or (hasattr(request.user, 'profile') and request.user.profile.role == 'admin')):
+            data.pop('role')
+            
+        serializer = ProfileSerializer(profile, data=data, partial=True)
         
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request):
+        # Only allow users to delete their own profile
+        profile = request.user.profile
+        
+        # Delete the profile picture if it exists
+        if profile.profile_picture:
+            profile.profile_picture.delete()
+            
+        # Note: This doesn't delete the user, just clears profile data
+        profile.bio = ''
+        profile.location = ''
+        profile.website = ''
+        profile.birth_date = None
+        profile.save()
+        
+        return Response({
+            'message': 'Profile information cleared successfully'
+        }, status=status.HTTP_200_OK)
 
 class ProfilePictureUploadView(APIView):
     """
@@ -949,16 +1004,14 @@ class FollowUserView(APIView):
 
 class NewsFeedView(APIView):
     """
-    News Feed endpoint that provides personalized content for users
-    - Supports pagination
-    - Sorts by date
-    - Filters by user preferences
-    - Caches results for performance
+    News Feed endpoint with privacy filtering
     """
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
     
     def get(self, request):
+        # Existing code...
+        
         # Get pagination parameters
         page = int(request.query_params.get('page', 1))
         page_size = int(request.query_params.get('page_size', 20))
@@ -967,18 +1020,15 @@ class NewsFeedView(APIView):
         feed_type = request.query_params.get('type', 'all')  # all, following, liked
         time_range = request.query_params.get('time', '7d')  # 24h, 7d, 30d, all
         
-        # Generate cache key based on parameters
-        cache_key = f"feed_{request.user.id}_{feed_type}_{time_range}_{page}"
-        cached_feed = cache.get(cache_key)
-        
-        if cached_feed:
-            return Response(cached_feed)
-            
         # Calculate time filter
         time_filter = self._get_time_filter(time_range)
         
-        # Get base queryset
-        posts = self._get_base_queryset(request.user, feed_type, time_filter)
+        # Get filtered posts with privacy settings applied
+        posts = self._get_filtered_posts(
+            request.user, 
+            feed_type, 
+            time_filter
+        )
         
         # Apply pagination
         paginator = self._paginate_queryset(posts, page, page_size)
@@ -995,21 +1045,13 @@ class NewsFeedView(APIView):
             context={'request': request}
         )
         
-        response_data = {
-            'results': [
-                {**item, 'engagement_score': item.get('db_engagement_score', 0)} 
-                for item in serializer.data
-            ],
+        return Response({
+            'results': serializer.data,
             'page': page,
             'total_pages': paginator['total_pages'],
             'has_next': paginator['has_next'],
             'has_previous': paginator['has_previous']
-        }
-        
-        # Cache the results for 5 minutes
-        cache.set(cache_key, response_data, 300)
-        
-        return Response(response_data)
+        })
     
     def _get_time_filter(self, time_range):
         """Calculate time filter based on range parameter"""
@@ -1023,8 +1065,8 @@ class NewsFeedView(APIView):
             return now - timedelta(days=30)
         return None
     
-    def _get_base_queryset(self, user, feed_type, time_filter):
-        """Get base queryset based on feed type and time filter"""
+    def _get_filtered_posts(self, user, feed_type, time_filter):
+        """Get posts with privacy filtering applied"""
         base_query = Post.objects.select_related(
             'author',
             'author__profile'
@@ -1039,11 +1081,31 @@ class NewsFeedView(APIView):
             
         # Apply feed type filter
         if feed_type == 'following':
-            following_users = user.profile.following.all()
+            following_users = []
+            if hasattr(user, 'following'):
+                following_users = user.following.all()
             base_query = base_query.filter(author__in=following_users)
         elif feed_type == 'liked':
             base_query = base_query.filter(likes__user=user)
             
+        # Apply privacy filtering if not admin/moderator
+        if not (user.is_staff or (hasattr(user, 'profile') and user.profile.role in ['admin', 'moderator'])):
+            # User's own posts
+            privacy_filter = Q(author=user)
+            
+            # Public posts
+            privacy_filter |= Q(privacy='public')
+            
+            # Followers-only posts from users the current user follows
+            following_ids = []
+            if hasattr(user, 'following'):
+                following_ids = user.following.values_list('id', flat=True)
+            
+            privacy_filter |= Q(privacy='followers', author_id__in=following_ids)
+            
+            # Apply the filter
+            base_query = base_query.filter(privacy_filter)
+        
         # Annotate with engagement metrics for sorting
         return base_query.annotate(
             db_engagement_score=Count('likes') + Count('comments') * 2
@@ -1057,7 +1119,7 @@ class NewsFeedView(APIView):
         total_posts = queryset.count()
         total_pages = (total_posts + page_size - 1) // page_size
         
-        if page > total_pages:
+        if page > total_pages and total_posts > 0:
             return None
             
         return {
@@ -1097,3 +1159,48 @@ class TrendingPostsView(APIView):
             cache.set(cache_key, trending_posts, 3600)
         
         return Response(trending_posts)
+    
+    
+class UserRoleManagementView(APIView):
+    """
+    User role management endpoint (admin only)
+    """
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, user_id):
+        # Check if the requesting user is an admin
+        if not (request.user.is_staff or (hasattr(request.user, 'profile') and request.user.profile.role == 'admin')):
+            raise PermissionDenied('Admin access required')
+            
+        try:
+            user = User.objects.get(id=user_id)
+            role = request.data.get('role')
+            
+            # Validate the role
+            valid_roles = ['admin', 'moderator', 'user']
+            if role not in valid_roles:
+                return Response(
+                    {'error': f"Invalid role. Must be one of: {', '.join(valid_roles)}"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+                
+            # Update the user's role
+            if not hasattr(user, 'profile'):
+                # Create profile if it doesn't exist
+                Profile.objects.create(user=user, role=role)
+            else:
+                # Update existing profile
+                profile = user.profile
+                profile.role = role
+                profile.save()
+            
+            return Response({
+                'message': f"User {user.username} role updated to {role}",
+                'user_id': user.id,
+                'username': user.username,
+                'role': role
+            })
+            
+        except User.DoesNotExist:
+            raise NotFound('User not found')
